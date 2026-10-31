@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Explore events')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: alerts}"></div>
+
+<main class="page">
+    <div class="container">
+
+        <div class="section-head">
+            <div>
+                <p class="eyebrow">Public catalogue</p>
+                <h2>Explore campus events</h2>
+                <p>
+                    Browse ongoing, upcoming and past events.
+                    <span th:if="${guest}">Restricted events are hidden until you sign in as a student.</span>
+                    <span th:unless="${guest}">Restricted events you qualify for are included.</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="alert alert-info" th:if="${guest}">
+            You are browsing as a guest, so only events open to all students are listed.
+            <a th:href="@{/login(role='STUDENT')}">Sign in as a student</a> to see restricted events.
+        </div>
+
+        <!-- ==================== Filters ==================== -->
+        <form class="filter-bar" method="get" th:action="@{/explore}">
+            <div class="form-grid form-grid--3">
+                <div class="field span-2">
+                    <label for="q">Search by event name</label>
+                    <input class="input" type="text" id="q" name="q" th:value="${search}"
+                           placeholder="e.g. Hackathon, Cultural, Workshop"/>
+                </div>
+                <div class="field">
+                    <label for="category">Category</label>
+                    <select class="select" id="category" name="category">
+                        <option value="">All categories</option>
+                        <option th:each="c : ${categories}" th:value="${c}" th:text="${c}"
+                                th:selected="${selectedCategory != null and selectedCategory == c}">Category</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="department">Department</label>
+                    <select class="select" id="department" name="department">
+                        <option value="">Any department</option>
+                        <option th:each="dept : ${departments}" th:value="${dept.code}" th:text="${dept.label}"
+                                th:selected="${selectedDepartment != null and selectedDepartment == dept.code}">CSE</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="year">Year</label>
+                    <select class="select" id="year" name="year">
+                        <option value="">Any year</option>
+                        <option th:each="y : ${years}" th:value="${y}" th:text="${y}"
+                                th:selected="${selectedYear != null and selectedYear == y}">Year</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="sort">Sort by</label>
+                    <select class="select" id="sort" name="sort">
+                        <option value="dateAsc" th:selected="${sort == 'dateAsc'}">Date - soonest first</option>
+                        <option value="dateDesc" th:selected="${sort == 'dateDesc'}">Date - latest first</option>
+                        <option value="nameAsc" th:selected="${sort == 'nameAsc'}">Name - A to Z</option>
+                        <option value="nameDesc" th:selected="${sort == 'nameDesc'}">Name - Z to A</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="from">From date</label>
+                    <input class="input" type="date" id="from" name="from" th:value="${from}"/>
+                </div>
+                <div class="field">
+                    <label for="to">To date</label>
+                    <input class="input" type="date" id="to" name="to" th:value="${to}"/>
+                </div>
+            </div>
+
+            <div class="btn-row mt-2">
+                <button class="btn btn-navy btn-sm" type="submit">Apply filters</button>
+                <a class="btn btn-ghost btn-sm" th:href="@{/explore}">Reset</a>
+            </div>
+        </form>
+
+        <p class="text-muted mb-2">
+            Showing <strong th:text="${events.size()}">0</strong> event(s).
+        </p>
+
+        <!-- ==================== Results ==================== -->
+        <div class="grid grid-cards" th:if="${!events.isEmpty()}">
+            <th:block th:each="event : ${events}">
+                <div th:replace="~{fragments/layout :: eventCard(${event}, '/explore')}"></div>
+            </th:block>
+        </div>
+
+        <div class="empty-state" th:if="${events.isEmpty()}">
+            <div class="empty-state__icon">&#9737;</div>
+            <h3>No events match your filters</h3>
+            <p>Try widening the date range or clearing the department and year filters.</p>
+            <a class="btn btn-primary mt-2" th:href="@{/explore}">Show all events</a>
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

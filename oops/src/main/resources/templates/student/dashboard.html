@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Student dashboard')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: alerts}"></div>
+
+<main class="page">
+    <div class="container">
+
+        <!-- ==================== Welcome ==================== -->
+        <section class="card card--navy mb-3">
+            <div class="card-body flex-between flex-wrap">
+                <div>
+                    <p class="eyebrow">Student dashboard</p>
+                    <h1 class="mt-1" th:text="'Welcome back, ' + ${currentStudent.fullName} + '!'">Welcome back!</h1>
+                    <p class="mt-1" style="color:#c3d0e3">
+                        <span th:text="${currentStudent.department}">CSE</span> &middot;
+                        <span th:text="${currentStudent.year}">Third Year</span> &middot;
+                        Section <span th:text="${currentStudent.section}">A</span> &middot;
+                        Register No. <span th:text="${currentStudent.registerNumber}">21CSE045</span>
+                    </p>
+                </div>
+                <div class="btn-row">
+                    <a class="btn btn-primary" th:href="@{/student/events}">Browse live events</a>
+                    <a class="btn btn-outline" th:href="@{/student/profile}">My profile</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== Quick stats ==================== -->
+        <div class="stat-grid mb-3">
+            <div class="stat-card">
+                <span class="stat-card__value" th:text="${liveEventCount}">0</span>
+                <span class="stat-card__label">Events you can join</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__value" th:text="${totalRegistrations}">0</span>
+                <span class="stat-card__label">My registrations</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__value" th:text="${upcomingRegistrations}">0</span>
+                <span class="stat-card__label">Upcoming</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__value" th:text="${pastEventsCount}">0</span>
+                <span class="stat-card__label">Attended / past</span>
+            </div>
+        </div>
+
+        <!-- ==================== Live events ==================== -->
+        <div class="section-head">
+            <div>
+                <p class="eyebrow">Live &amp; upcoming</p>
+                <h2>Events open to you</h2>
+                <p>Only events you are eligible for are listed here. Eligibility is checked on the server.</p>
+            </div>
+            <a class="btn btn-ghost btn-sm" th:href="@{/student/events}">See all</a>
+        </div>
+
+        <div class="grid grid-cards" th:if="${!liveEvents.isEmpty()}">
+            <th:block th:each="event : ${liveEvents}">
+                <div th:replace="~{fragments/layout :: eventCard(${event}, '/student/events')}"></div>
+            </th:block>
+        </div>
+
+        <div class="empty-state" th:if="${liveEvents.isEmpty()}">
+            <div class="empty-state__icon">&#9737;</div>
+            <h3>No events available right now</h3>
+            <p>There are no upcoming events matching your department, year and section. Check back soon.</p>
+            <a class="btn btn-primary mt-2" th:href="@{/explore}">Explore all events</a>
+        </div>
+
+        <!-- ==================== My registrations ==================== -->
+        <div class="section-head mt-3">
+            <div>
+                <p class="eyebrow">Your participation</p>
+                <h2>My registrations</h2>
+            </div>
+            <a class="btn btn-ghost btn-sm" th:href="@{/student/registrations}">View all</a>
+        </div>
+
+        <div class="card card--flush" th:if="${!myRegistrations.isEmpty()}">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Date</th>
+                        <th>Venue</th>
+                        <th>Registered on</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="view : ${myRegistrations}">
+                        <td th:text="${view.eventAvailable} ? ${view.event.name} : 'Event removed'">Event</td>
+                        <td th:text="${view.eventAvailable} ? ${view.event.eventDateLabel} : '-'">Date</td>
+                        <td th:text="${view.eventAvailable} ? ${view.event.locationLabel} : '-'">Venue</td>
+                        <td th:text="${view.registration.registeredAtLabel}">Registered</td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${view.registration.status.cssClass}"
+                                  th:text="${view.registration.status.label}">Confirmed</span>
+                        </td>
+                        <td>
+                            <a class="btn btn-sm btn-navy" th:if="${view.eventAvailable}"
+                               th:href="@{'/student/events/' + ${view.event.id}}">Details</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="empty-state" th:if="${myRegistrations.isEmpty()}">
+            <div class="empty-state__icon">&#9734;</div>
+            <h3>You have not registered for any event yet</h3>
+            <p>Pick an event from the list above and register in a few clicks.</p>
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

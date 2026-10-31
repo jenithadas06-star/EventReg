@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Register for an event')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: alerts}"></div>
+
+<main class="page">
+    <div class="container">
+
+        <div class="mb-2">
+            <a class="btn btn-ghost btn-sm" th:href="@{/student/events/{id}(id=${event.id})}">&larr; Back to event</a>
+        </div>
+
+        <div class="section-head">
+            <div>
+                <p class="eyebrow">Event registration</p>
+                <h2 th:text="${event.name}">Event name</h2>
+                <p>
+                    Your basic details are pre-filled from your profile and can be corrected if needed.
+                    They are stored with your registration.
+                </p>
+            </div>
+        </div>
+
+        <div class="detail-grid">
+
+            <!-- ==================== Form ==================== -->
+            <section>
+                <div class="alert alert-error" th:if="${formError}" th:text="${formError}">Form error</div>
+
+                <form class="card" th:action="@{/student/events/{id}/register(id=${event.id})}"
+                      th:object="${registrationForm}" method="post" novalidate>
+                    <div class="card-header">
+                        <h3>Student details</h3>
+                        <span class="badge badge-gold">Always required</span>
+                    </div>
+                    <div class="card-body">
+
+                        <div class="form-grid mb-2">
+                            <div class="field span-2">
+                                <label for="fullName">Full name <span class="required">*</span></label>
+                                <input class="input" type="text" id="fullName" th:field="*{fullName}"
+                                       th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''"/>
+                                <span class="field-error" th:if="${#fields.hasErrors('fullName')}"
+                                      th:errors="*{fullName}">Name error</span>
+                            </div>
+
+                            <div class="field">
+                                <label for="email">Email address <span class="required">*</span></label>
+                                <input class="input" type="email" id="email" th:field="*{email}"
+                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"/>
+                                <span class="field-error" th:if="${#fields.hasErrors('email')}"
+                                      th:errors="*{email}">Email error</span>
+                            </div>
+
+                            <div class="field">
+                                <label for="contactNumber">Contact number <span class="required">*</span></label>
+                                <input class="input" type="tel" id="contactNumber" th:field="*{contactNumber}"
+                                       th:classappend="${#fields.hasErrors('contactNumber')} ? 'is-invalid' : ''"
+                                       placeholder="10-digit mobile number"/>
+                                <span class="field-error" th:if="${#fields.hasErrors('contactNumber')}"
+                                      th:errors="*{contactNumber}">Contact error</span>
+                            </div>
+
+                            <div class="field">
+                                <label for="department">Department <span class="required">*</span></label>
+                                <select class="select" id="department" th:field="*{department}"
+                                        th:classappend="${#fields.hasErrors('department')} ? 'is-invalid' : ''">
+                                    <option value="">Select department</option>
+                                    <option th:each="dept : ${departments}" th:value="${dept.code}"
+                                            th:text="${dept.label}">CSE</option>
+                                </select>
+                                <span class="field-error" th:if="${#fields.hasErrors('department')}"
+                                      th:errors="*{department}">Department error</span>
+                            </div>
+
+                            <div class="field">
+                                <label for="section">Section <span class="required">*</span></label>
+                                <select class="select" id="section" th:field="*{section}"
+                                        th:classappend="${#fields.hasErrors('section')} ? 'is-invalid' : ''">
+                                    <option value="">Select section</option>
+                                    <option th:each="s : ${sections}" th:value="${s}" th:text="${s}">A</option>
+                                </select>
+                                <span class="field-error" th:if="${#fields.hasErrors('section')}"
+                                      th:errors="*{section}">Section error</span>
+                            </div>
+
+                            <div class="field">
+                                <label for="year">Year of study <span class="required">*</span></label>
+                                <select class="select" id="year" th:field="*{year}"
+                                        th:classappend="${#fields.hasErrors('year')} ? 'is-invalid' : ''">
+                                    <option value="">Select year</option>
+                                    <option th:each="y : ${years}" th:value="${y}" th:text="${y}">Year</option>
+                                </select>
+                                <span class="field-error" th:if="${#fields.hasErrors('year')}"
+                                      th:errors="*{year}">Year error</span>
+                            </div>
+
+                            <div class="field">
+                                <label for="registerNumber">Register number <span class="required">*</span></label>
+                                <input class="input" type="text" id="registerNumber" th:field="*{registerNumber}"
+                                       th:classappend="${#fields.hasErrors('registerNumber')} ? 'is-invalid' : ''"/>
+                                <span class="field-error" th:if="${#fields.hasErrors('registerNumber')}"
+                                      th:errors="*{registerNumber}">Register number error</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ==================== Custom questions ==================== -->
+                    <div class="card-header" th:if="${!event.questions.isEmpty()}">
+                        <h3>Additional questions from the organizer</h3>
+                        <span class="badge badge-navy"
+                              th:text="${event.questions.size()} + ' question(s)'">0</span>
+                    </div>
+                    <div class="card-body" th:if="${!event.questions.isEmpty()}">
+
+                        <div class="field-error mb-2" th:if="${#fields.hasErrors('answers')}"
+                             th:errors="*{answers}">Answers error</div>
+
+                        <div class="field mb-3" th:each="question : ${event.questions}">
+                            <label th:text="${question.questionText}">Question</label>
+
+                            <span class="hint">
+                                <span th:text="${question.typeLabel}">Type</span> &middot;
+                                <span th:text="${question.requirementLabel}">Required</span>
+                            </span>
+
+                            <!-- Short answer -->
+                            <input class="input" type="text" th:if="${question.type.name() == 'SHORT_ANSWER'}"
+                                   th:field="*{answers[__${question.id}__]}"/>
+
+                            <!-- Long answer -->
+                            <textarea class="textarea" th:if="${question.type.name() == 'LONG_ANSWER'}"
+                                      th:field="*{answers[__${question.id}__]}"></textarea>
+
+                            <!-- Multiple choice -->
+                            <select class="select" th:if="${question.type.name() == 'MULTIPLE_CHOICE'}"
+                                    th:field="*{answers[__${question.id}__]}">
+                                <option value="">Select an option</option>
+                                <option th:each="option : ${question.options}" th:value="${option}"
+                                        th:text="${option}">Option</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div class="card-body">
+                        <div class="form-actions">
+                            <button class="btn btn-primary" type="submit">Register and Participate</button>
+                            <a class="btn btn-ghost" th:href="@{/student/events/{id}(id=${event.id})}">Cancel</a>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <!-- ==================== Summary ==================== -->
+            <aside class="sticky-side">
+                <article class="card">
+                    <div class="card-header">
+                        <h3>Event summary</h3>
+                        <span class="badge" th:classappend="${event.statusCssClass}"
+                              th:text="${event.statusLabel}">Upcoming</span>
+                    </div>
+                    <div class="card-body">
+                        <ul class="info-list">
+                            <li><span class="info-key">Category</span><span class="info-value" th:text="${event.category}">-</span></li>
+                            <li><span class="info-key">Date</span><span class="info-value" th:text="${event.eventDateLabel}">-</span></li>
+                            <li><span class="info-key">Time</span><span class="info-value" th:text="${event.startTimeLabel}">-</span></li>
+                            <li><span class="info-key">Venue</span><span class="info-value" th:text="${event.locationLabel}">-</span></li>
+                            <li><span class="info-key">Host</span><span class="info-value" th:text="${event.organizerName}">-</span></li>
+                            <li><span class="info-key">Deadline</span><span class="info-value" th:text="${event.deadlineLabel}">-</span></li>
+                            <li>
+                                <span class="info-key">Seats left</span>
+                                <span class="info-value"
+                                      th:text="${event.maxParticipants != null}
+                                              ? (${event.seatsLeft} + ' of ' + ${event.maxParticipants})
+                                              : 'Not limited'">-</span>
+                            </li>
+                        </ul>
+                        <div class="alert alert-info mt-2">
+                            One registration per student per event. You can cancel from
+                            <em>My Registrations</em> before the deadline.
+                        </div>
+                    </div>
+                </article>
+            </aside>
+
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

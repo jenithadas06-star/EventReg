@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Past events')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: alerts}"></div>
+
+<main class="page">
+    <div class="container">
+
+        <div class="section-head">
+            <div>
+                <p class="eyebrow">Archive</p>
+                <h2>Past events</h2>
+                <p>
+                    Events that have already taken place, including ones you did not attend.
+                    Visibility rules still apply &mdash; restricted events only appear if you qualify.
+                </p>
+            </div>
+            <a class="btn btn-ghost btn-sm" th:href="@{/student/events}">Live events</a>
+        </div>
+
+        <form class="filter-bar" method="get" th:action="@{/student/past-events}">
+            <div class="form-grid form-grid--3">
+                <div class="field">
+                    <label for="q">Search by event name</label>
+                    <input class="input" type="text" id="q" name="q" th:value="${search}"
+                           placeholder="e.g. Workshop"/>
+                </div>
+                <div class="field">
+                    <label for="category">Category</label>
+                    <select class="select" id="category" name="category">
+                        <option value="">All categories</option>
+                        <option th:each="c : ${categories}" th:value="${c}" th:text="${c}"
+                                th:selected="${selectedCategory != null and selectedCategory == c}">Category</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="sort">Sort by</label>
+                    <select class="select" id="sort" name="sort">
+                        <option value="dateDesc" th:selected="${sort == 'dateDesc'}">Date - most recent first</option>
+                        <option value="dateAsc" th:selected="${sort == 'dateAsc'}">Date - oldest first</option>
+                        <option value="nameAsc" th:selected="${sort == 'nameAsc'}">Name - A to Z</option>
+                        <option value="popular" th:selected="${sort == 'popular'}">Most registered</option>
+                    </select>
+                </div>
+            </div>
+            <div class="btn-row mt-2">
+                <button class="btn btn-navy btn-sm" type="submit">Apply filters</button>
+                <a class="btn btn-ghost btn-sm" th:href="@{/student/past-events}">Reset</a>
+            </div>
+        </form>
+
+        <p class="text-muted mb-2">
+            Showing <strong th:text="${events.size()}">0</strong> past event(s).
+        </p>
+
+        <div class="grid grid-cards" th:if="${!events.isEmpty()}">
+            <th:block th:each="event : ${events}">
+                <div th:replace="~{fragments/layout :: eventCard(${event}, '/student/events')}"></div>
+            </th:block>
+        </div>
+
+        <div class="empty-state" th:if="${events.isEmpty()}">
+            <div class="empty-state__icon">&#9737;</div>
+            <h3>No past events to show</h3>
+            <p>Completed events will be listed here once they finish.</p>
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

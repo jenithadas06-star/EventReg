@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Manage events')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: alerts}"></div>
+
+<main class="page">
+    <div class="container">
+
+        <div class="section-head">
+            <div>
+                <p class="eyebrow">Event management</p>
+                <h2>Manage events</h2>
+                <p>
+                    <strong th:text="${allCount}">0</strong> event(s) in total.
+                    Publish drafts, close registrations, cancel or delete events here.
+                </p>
+            </div>
+            <a class="btn btn-primary btn-sm" th:href="@{/organizer/events/new}">Create new event</a>
+        </div>
+
+        <!-- ==================== Status filter ==================== -->
+        <div class="tabs">
+            <a th:href="@{/organizer/events(status='ALL')}"
+               th:classappend="${statusFilter == 'ALL'} ? 'active' : ''">All</a>
+            <a th:href="@{/organizer/events(status='Upcoming')}"
+               th:classappend="${statusFilter == 'Upcoming'} ? 'active' : ''">Upcoming</a>
+            <a th:href="@{/organizer/events(status='Ongoing')}"
+               th:classappend="${statusFilter == 'Ongoing'} ? 'active' : ''">Ongoing</a>
+            <a th:href="@{/organizer/events(status='Completed')}"
+               th:classappend="${statusFilter == 'Completed'} ? 'active' : ''">Completed</a>
+            <a th:href="@{/organizer/events(status='Draft')}"
+               th:classappend="${statusFilter == 'Draft'} ? 'active' : ''">Drafts</a>
+            <a th:href="@{/organizer/events(status='Cancelled')}"
+               th:classappend="${statusFilter == 'Cancelled'} ? 'active' : ''">Cancelled</a>
+        </div>
+
+        <!-- ==================== Event table ==================== -->
+        <div class="card card--flush" th:if="${!events.isEmpty()}">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Category</th>
+                        <th>Date &amp; time</th>
+                        <th>Venue</th>
+                        <th>Eligibility</th>
+                        <th>Capacity</th>
+                        <th>Registered</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="event : ${events}">
+                        <td>
+                            <div th:text="${event.name}">Event</div>
+                            <div class="text-muted" style="font-size:.76rem"
+                                 th:text="${event.questions.size()} + ' custom question(s)'">0</div>
+                        </td>
+                        <td th:text="${event.category}">-</td>
+                        <td>
+                            <div th:text="${event.eventDateLabel}">-</div>
+                            <div class="text-muted" style="font-size:.76rem" th:text="${event.startTimeLabel}">-</div>
+                        </td>
+                        <td th:text="${event.locationLabel}">-</td>
+                        <td style="min-width:190px">
+                            <span class="badge"
+                                  th:classappend="${event.eligibility.visibleToAll} ? 'badge-success' : 'badge-gold'"
+                                  th:text="${event.eligibility.visibleToAll} ? 'Open to all' : 'Restricted'">Open</span>
+                            <div class="text-muted mt-1" style="font-size:.74rem"
+                                 th:unless="${event.eligibility.visibleToAll}"
+                                 th:text="${event.eligibility.departmentsLabel} + ' / '
+                                         + ${event.eligibility.yearsLabel} + ' / '
+                                         + ${event.eligibility.sectionsLabel}">Rules</div>
+                        </td>
+                        <td th:text="${event.maxParticipants != null} ? ${event.maxParticipants} : 'Unlimited'">-</td>
+                        <td>
+                            <span th:text="${event.registeredCount}">0</span>
+                            <div class="text-muted" style="font-size:.74rem"
+                                 th:text="${event.seatsLeft} + ' seat(s) left'">-</div>
+                        </td>
+                        <td th:text="${event.deadlineLabel}">-</td>
+                        <td>
+                            <span class="badge" th:classappend="${event.statusCssClass}"
+                                  th:text="${event.statusLabel}">Upcoming</span>
+                        </td>
+                        <td style="min-width:230px">
+                            <div class="btn-row mb-1">
+                                <a class="btn btn-sm btn-ghost"
+                                   th:href="@{/organizer/events/{id}/edit(id=${event.id})}">Edit</a>
+                                <a class="btn btn-sm btn-ghost"
+                                   th:href="@{/organizer/events/{id}/questions(id=${event.id})}">Questions</a>
+                                <a class="btn btn-sm btn-navy"
+                                   th:href="@{/organizer/events/{id}/participants(id=${event.id})}">Participants</a>
+                            </div>
+
+                            <div class="btn-row">
+                                <form th:action="@{/organizer/events/{id}/status(id=${event.id})}" method="post">
+                                    <button class="btn btn-sm btn-primary" type="submit"
+                                            name="action" value="publish"
+                                            th:if="${!event.published}">Publish</button>
+                                    <button class="btn btn-sm btn-ghost" type="submit"
+                                            name="action" value="draft"
+                                            th:if="${event.published}">Move to draft</button>
+                                    <button class="btn btn-sm btn-ghost" type="submit"
+                                            name="action" value="close"
+                                            th:if="${event.published and event.registrationOpen}">Close registrations</button>
+                                    <button class="btn btn-sm btn-ghost" type="submit"
+                                            name="action" value="reopen"
+                                            th:if="${event.published and !event.registrationOpen}">Reopen registrations</button>
+                                    <button class="btn btn-sm btn-danger" type="submit"
+                                            name="action" value="cancel"
+                                            th:if="${event.published}"
+                                            th:data-confirm="'Cancel this event? Registered students will see it as cancelled.'">Cancel event</button>
+                                </form>
+
+                                <form th:action="@{/organizer/events/{id}/delete(id=${event.id})}" method="post"
+                                      th:data-confirm="'Delete this event and all of its registrations? This cannot be undone.'">
+                                    <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="empty-state" th:if="${events.isEmpty()}">
+            <div class="empty-state__icon">&#9734;</div>
+            <h3>Nothing to show for this filter</h3>
+            <p>Create a new event or switch to another status filter.</p>
+            <a class="btn btn-primary mt-2" th:href="@{/organizer/events/new}">Create new event</a>
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

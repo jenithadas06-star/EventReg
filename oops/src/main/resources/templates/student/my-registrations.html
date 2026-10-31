@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My registrations')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: alerts}"></div>
+
+<main class="page">
+    <div class="container">
+
+        <div class="section-head">
+            <div>
+                <p class="eyebrow">Your participation</p>
+                <h2>My registrations</h2>
+                <p>
+                    <strong th:text="${activeCount}">0</strong> active registration(s).
+                    Cancelled entries stay in the list so you keep a full history.
+                </p>
+            </div>
+            <a class="btn btn-primary btn-sm" th:href="@{/student/events}">Find more events</a>
+        </div>
+
+        <div class="card card--flush" th:if="${!myRegistrations.isEmpty()}">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Category</th>
+                        <th>Event date</th>
+                        <th>Venue</th>
+                        <th>Registered on</th>
+                        <th>Reference</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="view : ${myRegistrations}">
+                        <td>
+                            <a th:if="${view.eventAvailable}" class="btn-link"
+                               th:href="@{/student/events/{id}(id=${view.event.id})}"
+                               th:text="${view.event.name}">Event</a>
+                            <span th:unless="${view.eventAvailable}" class="text-muted">Event removed</span>
+                            <div class="text-muted" style="font-size:.78rem"
+                                 th:text="${view.eventAvailable} ? ${view.event.startTimeLabel} : ''">Time</div>
+                        </td>
+                        <td th:text="${view.eventAvailable} ? ${view.event.category} : '-'">-</td>
+                        <td th:text="${view.eventAvailable} ? ${view.event.eventDateLabel} : '-'">-</td>
+                        <td th:text="${view.eventAvailable} ? ${view.event.locationLabel} : '-'">-</td>
+                        <td th:text="${view.registration.registeredAtLabel}">-</td>
+                        <td th:text="${'#' + view.registration.id}">#1</td>
+                        <td>
+                            <span class="badge" th:classappend="${view.registration.status.cssClass}"
+                                  th:text="${view.registration.status.label}">Confirmed</span>
+                        </td>
+                        <td>
+                            <div class="btn-row">
+                                <a class="btn btn-sm btn-navy" th:if="${view.eventAvailable}"
+                                   th:href="@{/student/events/{id}(id=${view.event.id})}">Details</a>
+                                <form th:if="${view.registration.status.name() != 'CANCELLED'}"
+                                      th:action="@{/student/registrations/{id}/cancel(id=${view.registration.id})}"
+                                      method="post"
+                                      th:data-confirm="'Cancel your registration for this event?'">
+                                    <button class="btn btn-sm btn-danger" type="submit">Cancel</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="empty-state" th:if="${myRegistrations.isEmpty()}">
+            <div class="empty-state__icon">&#9734;</div>
+            <h3>No registrations yet</h3>
+            <p>Once you register for an event it will appear here with its status and reference number.</p>
+            <a class="btn btn-primary mt-2" th:href="@{/student/events}">Browse live events</a>
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${event.name})}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: alerts}"></div>
+
+<main class="page">
+    <div class="container">
+
+        <div class="mb-2">
+            <a class="btn btn-ghost btn-sm" th:if="${guest}" th:href="@{/explore}">&larr; Back to events</a>
+            <a class="btn btn-ghost btn-sm" th:unless="${guest}" th:href="@{/student/events}">&larr; Back to events</a>
+        </div>
+
+        <!-- ==================== Hero ==================== -->
+        <section class="detail-hero">
+            <div class="detail-hero__top">
+                <div class="detail-hero__content">
+                    <div class="btn-row mb-2">
+                        <span class="badge badge-gold" th:text="${event.category}">Category</span>
+                        <span class="badge" th:classappend="${event.statusCssClass}"
+                              th:text="${event.statusLabel}">Upcoming</span>
+                        <span class="badge badge-navy" th:text="${event.eligibility.visibilityLabel}">Visibility</span>
+                    </div>
+                    <h1 th:text="${event.name}">Event name</h1>
+                    <p class="mt-2" th:text="${event.eventDateLabel} + ' at ' + ${event.startTimeLabel}
+                            + ' | ' + ${event.locationLabel}">Date and venue</p>
+                </div>
+                <div class="detail-hero__poster">
+                    <img th:src="${event.posterUrlOrDefault}" data-poster="true" th:alt="${event.name} + ' poster'"/>
+                    <span class="poster-fallback" style="display:none"
+                          th:text="${#strings.substring(event.name, 0, 1)}">E</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="detail-grid">
+
+            <!-- ==================== Left column ==================== -->
+            <div>
+
+                <article class="card mb-3">
+                    <div class="card-header"><h2>About this event</h2></div>
+                    <div class="card-body">
+                        <p style="white-space:pre-line" th:text="${event.description}">Description</p>
+                    </div>
+                </article>
+
+                <article class="card mb-3">
+                    <div class="card-header"><h2>Event information</h2></div>
+                    <div class="card-body">
+                        <ul class="info-list">
+                            <li><span class="info-key">Category</span><span class="info-value" th:text="${event.category}">-</span></li>
+                            <li><span class="info-key">Date</span><span class="info-value" th:text="${event.eventDateLabel}">-</span></li>
+                            <li><span class="info-key">Start time</span><span class="info-value" th:text="${event.startTimeLabel}">-</span></li>
+                            <li><span class="info-key">Duration</span><span class="info-value" th:text="${event.durationLabel}">-</span></li>
+                            <li><span class="info-key">Venue</span><span class="info-value" th:text="${event.venue}">-</span></li>
+                            <li th:if="${event.building != null and !event.building.isBlank()}">
+                                <span class="info-key">Building</span><span class="info-value" th:text="${event.building}">-</span>
+                            </li>
+                            <li th:if="${event.roomNumber != null and !event.roomNumber.isBlank()}">
+                                <span class="info-key">Room</span><span class="info-value" th:text="${event.roomNumber}">-</span>
+                            </li>
+                            <li><span class="info-key">Capacity</span>
+                                <span class="info-value"
+                                      th:text="${event.maxParticipants != null} ? ${event.maxParticipants} + ' participants' : 'Not limited'">-</span>
+                            </li>
+                            <li><span class="info-key">Participation</span>
+                                <span class="info-value"
+                                      th:text="${event.teamEvent} ? 'Team event (team size ' + ${event.teamSize} + ')' : 'Individual'">-</span>
+                            </li>
+                            <li><span class="info-key">Registrations open</span>
+                                <span class="info-value" th:text="${event.registrationOpenLabel}">-</span>
+                            </li>
+                            <li><span class="info-key">Registration deadline</span>
+                                <span class="info-value" th:text="${event.deadlineLabel}">-</span>
+                            </li>
+                        </ul>
+                    </div>
+                </article>
+
+                <article class="card mb-3">
+                    <div class="card-header"><h2>Organizer</h2></div>
+                    <div class="card-body">
+                        <ul class="info-list">
+                            <li><span class="info-key">Name</span><span class="info-value" th:text="${event.organizerName}">-</span></li>
+                            <li th:if="${event.clubOrDepartment != null and !event.clubOrDepartment.isBlank()}">
+                                <span class="info-key">Club / Department</span><span class="info-value" th:text="${event.clubOrDepartment}">-</span>
+                            </li>
+                            <li th:if="${event.organizerContact != null and !event.organizerContact.isBlank()}">
+                                <span class="info-key">Contact</span><span class="info-value" th:text="${event.organizerContact}">-</span>
+                            </li>
+                        </ul>
+                    </div>
+                </article>
+
+                <article class="card mb-3">
+                    <div class="card-header"><h2>Eligibility &amp; visibility</h2></div>
+                    <div class="card-body">
+                        <div class="alert alert-info" th:text="${restrictionSummary}">Eligibility</div>
+                        <p th:if="${event.eligibilityRequirements != null and !event.eligibilityRequirements.isBlank()}"
+                           style="white-space:pre-line" th:text="${event.eligibilityRequirements}">Requirements</p>
+                        <p class="text-muted mt-2" style="font-size:.84rem">
+                            The server re-checks these rules on every request and again when you submit the
+                            registration form, so they cannot be bypassed from the browser.
+                        </p>
+                    </div>
+                </article>
+
+                <article class="card mb-3"
+                         th:if="${(event.instructions != null and !event.instructions.isBlank())
+                                 or (event.prerequisites != null and !event.prerequisites.isBlank())}">
+                    <div class="card-header"><h2>Instructions &amp; prerequisites</h2></div>
+                    <div class="card-body">
+                        <div th:if="${event.instructions != null and !event.instructions.isBlank()}" class="mb-2">
+                            <p class="eyebrow">Instructions</p>
+                            <p style="white-space:pre-line" th:text="${event.instructions}">Instructions</p>
+                        </div>
+                        <div th:if="${event.prerequisites != null and !event.prerequisites.isBlank()}">
+                            <p class="eyebrow">Prerequisites</p>
+                            <p style="white-space:pre-line" th:text="${event.prerequisites}">Prerequisites</p>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="card mb-3" th:if="${!event.questions.isEmpty()}">
+                    <div class="card-header">
+                        <h2>Questions asked at registration</h2>
+                        <span class="badge badge-muted" th:text="${event.questions.size()} + ' question(s)'">0</span>
+                    </div>
+                    <div class="card-body">
+                        <ul class="info-list">
+                            <li th:each="question : ${event.questions}">
+                                <span class="info-key" th:text="${'Q' + (questionStat.index + 1)}">Q1</span>
+                                <span class="info-value">
+                                    <span th:text="${question.questionText}">Question</span>
+                                    <br/>
+                                    <span class="badge" th:text="${question.typeLabel}">Short answer</span>
+                                    <span class="badge badge-muted" th:text="${question.requirementLabel}">Required</span>
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                </article>
+
+            </div>
+
+            <!-- ==================== Right column ==================== -->
+            <aside class="sticky-side">
+
+                <article class="card mb-3">
+                    <div class="card-header">
+                        <h3>Registration</h3>
+                        <span class="badge" th:classappend="${event.statusCssClass}"
+                              th:text="${event.statusLabel}">Upcoming</span>
+                    </div>
+                    <div class="card-body">
+
+                        <ul class="info-list">
+                            <li>
+                                <span class="info-key">Seats left</span>
+                                <span class="info-value"
+                                      th:text="${event.maxParticipants != null}
+                                              ? (${event.seatsLeft} + ' of ' + ${event.maxParticipants})
+                                              : 'Not limited'">-</span>
+                            </li>
+                            <li>
+                                <span class="info-key">Registered</span>
+                                <span class="info-value" th:text="${event.registeredCount}">0</span>
+                            </li>
+                            <li>
+                                <span class="info-key">Deadline</span>
+                                <span class="info-value" th:text="${event.deadlineLabel}">-</span>
+                            </li>
+                        </ul>
+
+                        <div class="meter mt-2" th:if="${event.maxParticipants != null}">
+                            <div class="meter__fill" th:classappend="${event.full} ? 'is-full' : ''"
+                                 th:style="'width:' + ${event.fillPercent} + '%'"></div>
+                        </div>
+
+                        <!-- --- Student already registered --- -->
+                        <div th:if="${registration != null and registration.status.name() != 'CANCELLED'}"
+                             class="mt-3">
+                            <div class="alert alert-success">
+                                You are registered for this event.
+                                Reference <strong th:text="${'#' + registration.id}">#1</strong>.
+                            </div>
+                            <div class="btn-row">
+                                <a class="btn btn-navy btn-block" th:href="@{/student/registrations}">View my registrations</a>
+                            </div>
+                        </div>
+
+                        <!-- --- Eligible and open: the main call to action --- -->
+                        <div th:if="${(registration == null or registration.status.name() == 'CANCELLED')
+                                     and !guest and eligible and event.registrationOpen}" class="mt-3">
+                            <a class="btn btn-primary btn-block"
+                               th:href="@{/student/events/{id}/register(id=${event.id})}">
+                                Register and Participate
+                            </a>
+                            <p class="text-muted mt-1" style="font-size:.8rem">
+                                No duplicate registrations &mdash; one entry per student.
+                            </p>
+                        </div>
+
+                        <!-- --- Guest: ask them to sign in --- -->
+                        <div th:if="${guest}" class="mt-3">
+                            <div class="alert alert-warning">
+                                Sign in with your student account to register for this event.
+                            </div>
+                            <a class="btn btn-primary btn-block" th:href="@{/login(role='STUDENT')}">Sign in as Student</a>
+                        </div>
+
+                        <!-- --- Closed / full / not eligible --- -->
+                        <div th:if="${!guest and !event.registrationOpen
+                                     and (registration == null or registration.status.name() == 'CANCELLED')}"
+                             class="mt-3">
+                            <div class="alert alert-error" th:text="${event.registrationClosedReason}">
+                                Registrations are closed.
+                            </div>
+                        </div>
+
+                        <div th:if="${!guest and !eligible}" class="mt-3">
+                            <div class="alert alert-error">
+                                Your department, year or section does not match this event's eligibility rules.
+                            </div>
+                        </div>
+
+                    </div>
+                </article>
+
+                <article class="card">
+                    <div class="card-body">
+                        <p class="eyebrow">Quick facts</p>
+                        <ul class="meta-list mt-1">
+                            <li><span class="meta-key">Date</span><span th:text="${event.eventDateLabel}">-</span></li>
+                            <li><span class="meta-key">Time</span><span th:text="${event.startTimeLabel}">-</span></li>
+                            <li><span class="meta-key">Venue</span><span th:text="${event.locationLabel}">-</span></li>
+                            <li><span class="meta-key">Host</span><span th:text="${event.organizerName}">-</span></li>
+                        </ul>
+                    </div>
+                </article>
+
+            </aside>
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>
