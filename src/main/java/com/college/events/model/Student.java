@@ -1,9 +1,14 @@
 package com.college.events.model;
 
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+
 /**
  * A student account. Carries the academic details that drive event eligibility
  * (department / year / section) and the basic registration form fields.
  */
+@Entity
+@DiscriminatorValue("STUDENT")
 public class Student extends User {
 
     private String department;

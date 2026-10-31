@@ -249,18 +249,22 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void openToAll(Event event) {
-        EventEligibility eligibility = new EventEligibility();
+        EventEligibility eligibility = event.getEligibility() != null ? event.getEligibility() : new EventEligibility();
         eligibility.setVisibleToAll(true);
+        eligibility.setEventId(event.getId());
         event.setEligibility(eligibility);
+        events.save(event);
     }
 
     private void restrictTo(Event event, List<String> departments, List<String> years, List<String> sections) {
-        EventEligibility eligibility = new EventEligibility();
+        EventEligibility eligibility = event.getEligibility() != null ? event.getEligibility() : new EventEligibility();
         eligibility.setVisibleToAll(false);
+        eligibility.setEventId(event.getId());
         eligibility.setDepartments(new LinkedHashSet<>(departments));
         eligibility.setYears(new LinkedHashSet<>(years));
         eligibility.setSections(new LinkedHashSet<>(sections));
         event.setEligibility(eligibility);
+        events.save(event);
     }
 
     private void addQuestion(Event event, String text, QuestionType type, boolean required, List<String> options) {

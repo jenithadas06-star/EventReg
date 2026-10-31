@@ -1,15 +1,30 @@
 package com.college.events.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 /**
  * A student's answer to one {@link RegistrationQuestion}, stored alongside the
  * {@link EventRegistration} it belongs to.
  */
+@Entity
+@Table(name = "registration_answers")
 public class RegistrationAnswer {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long registrationId;
     private Long questionId;
+
+    @Column(columnDefinition = "TEXT")
     private String questionText;
+
+    @Column(columnDefinition = "TEXT")
     private String answer;
 
     public RegistrationAnswer() {

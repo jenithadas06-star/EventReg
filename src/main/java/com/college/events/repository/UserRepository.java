@@ -2,31 +2,21 @@ package com.college.events.repository;
 
 import com.college.events.model.Role;
 import com.college.events.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Storage contract for accounts.
- *
- * <p>Swap {@code InMemoryUserRepository} for a Spring Data JPA interface later -
- * the service layer only depends on this interface.</p>
+ * Storage contract for accounts, backed by Spring Data JPA.
  */
-public interface UserRepository {
-
-    User save(User user);
-
-    Optional<User> findById(Long id);
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
-
-    List<User> findAll();
 
     List<User> findByRole(Role role);
 
     boolean existsByEmail(String email);
-
-    void deleteById(Long id);
-
-    long count();
 }

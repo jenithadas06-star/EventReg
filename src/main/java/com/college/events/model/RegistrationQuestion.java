@@ -1,5 +1,17 @@
 package com.college.events.model;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,14 +19,28 @@ import java.util.List;
  * A custom question added by an organizer to an event's registration form.
  * Appears automatically on the student registration form for that event.
  */
+@Entity
+@Table(name = "registration_questions")
 public class RegistrationQuestion {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long eventId;
+
+    @Column(columnDefinition = "TEXT")
     private String questionText;
+
+    @Enumerated(EnumType.STRING)
     private QuestionType type = QuestionType.SHORT_ANSWER;
+
     private boolean required;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "question_options", joinColumns = @JoinColumn(name = "question_id"))
+    @Column(name = "option_text")
     private List<String> options = new ArrayList<>();
+
     private int orderIndex;
 
     public RegistrationQuestion() {

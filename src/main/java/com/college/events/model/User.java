@@ -1,17 +1,44 @@
 package com.college.events.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.DiscriminatorType;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.Table;
+
 /**
  * Common identity data shared by every account in the portal.
  *
  * <p>{@link Student} and {@link Organizer} extend this class, which keeps a single
- * credential table today and maps cleanly to JPA single-table inheritance later.</p>
+ * credential table and maps to JPA single-table inheritance.</p>
  */
+@Entity
+@Table(name = "users")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "user_type", discriminatorType = DiscriminatorType.STRING)
+@DiscriminatorValue("USER")
 public class User {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String fullName;
+
+    @Column(unique = true, nullable = false)
     private String email;
+
     private String password;
+
+    @Enumerated(EnumType.STRING)
     private Role role;
 
     public User() {

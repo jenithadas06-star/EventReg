@@ -1,5 +1,16 @@
 package com.college.events.model;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -12,10 +23,14 @@ import java.util.List;
  * can read the participant list and the exported history without extra lookups,
  * and so the record stays intact if the student later edits their profile.</p>
  */
+@Entity
+@Table(name = "event_registrations")
 public class EventRegistration {
 
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a");
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long eventId;
     private Long studentId;
@@ -30,9 +45,13 @@ public class EventRegistration {
     private String contactNumber;
 
     private LocalDateTime registeredAt = LocalDateTime.now();
+
+    @Enumerated(EnumType.STRING)
     private RegistrationStatus status = RegistrationStatus.CONFIRMED;
 
-    private final List<RegistrationAnswer> answers = new ArrayList<>();
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JoinColumn(name = "registration_id")
+    private List<RegistrationAnswer> answers = new ArrayList<>();
 
     public EventRegistration() {
     }
@@ -135,6 +154,10 @@ public class EventRegistration {
 
     public List<RegistrationAnswer> getAnswers() {
         return answers;
+    }
+
+    public void setAnswers(List<RegistrationAnswer> answers) {
+        this.answers = answers;
     }
 
     public String getRegisteredAtLabel() {

@@ -1,5 +1,20 @@
 package com.college.events.model;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -15,15 +30,20 @@ import java.util.List;
  * <p>Field names intentionally mirror the organizer "Create event" form so the
  * same object can be persisted to a database later without translation.</p>
  */
+@Entity
+@Table(name = "events")
 public class Event {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy");
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("hh:mm a");
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     // --- Basic information ---
     private String name;
+    @Column(columnDefinition = "TEXT")
     private String description;
     private String category;
     private String posterUrl;
@@ -51,22 +71,33 @@ public class Event {
     private String organizerContact;
 
     // --- Additional information ---
+    @Column(columnDefinition = "TEXT")
     private String instructions;
+    @Column(columnDefinition = "TEXT")
     private String eligibilityRequirements;
+    @Column(columnDefinition = "TEXT")
     private String prerequisites;
 
     // --- Bookkeeping ---
+    @Enumerated(EnumType.STRING)
     private EventStatus status = EventStatus.DRAFT;
     private Long organizerId;
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JoinColumn(name = "eligibility_id")
     private EventEligibility eligibility = new EventEligibility();
-    private final List<RegistrationQuestion> questions = new ArrayList<>();
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JoinColumn(name = "event_id")
+    @OrderBy("orderIndex ASC")
+    private List<RegistrationQuestion> questions = new ArrayList<>();
 
     /**
      * Transient seat counter, filled in by {@code EventService} when events are
      * listed so templates can render "seats left" without extra queries.
      */
+    @Transient
     private int registeredCount;
 
     public Event() {
@@ -480,6 +511,10 @@ public class Event {
 
     public List<RegistrationQuestion> getQuestions() {
         return questions;
+    }
+
+    public void setQuestions(List<RegistrationQuestion> questions) {
+        this.questions = questions;
     }
 
     public int getRegisteredCount() {

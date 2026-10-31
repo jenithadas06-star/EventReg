@@ -1,9 +1,14 @@
 package com.college.events.model;
 
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+
 /**
  * An organizer account - a faculty member or student club representative who
  * creates and manages events.
  */
+@Entity
+@DiscriminatorValue("ORGANIZER")
 public class Organizer extends User {
 
     private String clubOrDepartment;
