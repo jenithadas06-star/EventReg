@@ -27,14 +27,21 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import javax.imageio.ImageIO;
 
 /**
  * Everything behind the Organizer role: overview, event creation / editing,
@@ -406,7 +413,12 @@ public class OrganizerController {
         return form;
     }
 
-    /** Stores an uploaded poster under {@code uploads/} and returns its public URL. */
+    /**
+     * Stores an uploaded poster:
+     * 1. Saves a local backup copy under {@code uploads/}.
+     * 2. Encodes an optimized Base64 Data URI that persists in the database across
+     *    Render/cloud container restarts without relying on ephemeral disks.
+     */
     private String storePoster(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             return null;
@@ -420,11 +432,54 @@ public class OrganizerController {
             throw new BusinessException("The event poster must be a PNG, JPG, WEBP or GIF image.");
         }
         try {
-            Path directory = Paths.get("uploads").toAbsolutePath();
-            Files.createDirectories(directory);
-            String fileName = "poster-" + UUID.randomUUID() + extension;
-            file.transferTo(directory.resolve(fileName).toFile());
-            return "/uploads/" + fileName;
+            // Optional local disk save
+            try {
+                Path directory = Paths.get("uploads").toAbsolutePath();
+                Files.createDirectories(directory);
+                String fileName = "poster-" + UUID.randomUUID() + extension;
+                file.transferTo(directory.resolve(fileName).toFile());
+            } catch (Exception ignored) {
+                // Ignore disk write errors in read-only/ephemeral container runtimes
+            }
+
+            // Optimize & encode into a persistent Base64 Data URI
+            byte[] imageBytes = file.getBytes();
+            String mimeType = file.getContentType() != null && !file.getContentType().isBlank()
+                    ? file.getContentType() : "image/jpeg";
+
+            try {
+                BufferedImage original = ImageIO.read(new ByteArrayInputStream(imageBytes));
+                if (original != null) {
+                    int maxDimension = 1200;
+                    int width = original.getWidth();
+                    int height = original.getHeight();
+
+                    if (width > maxDimension || height > maxDimension) {
+                        double scale = Math.min((double) maxDimension / width, (double) maxDimension / height);
+                        int newWidth = Math.max(1, (int) Math.round(width * scale));
+                        int newHeight = Math.max(1, (int) Math.round(height * scale));
+
+                        BufferedImage resized = new BufferedImage(newWidth, newHeight,
+                                original.getType() == 0 ? BufferedImage.TYPE_INT_RGB : original.getType());
+                        Graphics2D g2d = resized.createGraphics();
+                        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2d.drawImage(original, 0, 0, newWidth, newHeight, null);
+                        g2d.dispose();
+
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        String formatName = extension.replace(".", "").equalsIgnoreCase("png") ? "png" : "jpeg";
+                        ImageIO.write(resized, formatName, baos);
+                        imageBytes = baos.toByteArray();
+                        mimeType = formatName.equalsIgnoreCase("png") ? "image/png" : "image/jpeg";
+                    }
+                }
+            } catch (Exception ignored) {
+                // Fall back to original bytes if ImageIO cannot parse
+            }
+
+            return "data:" + mimeType + ";base64," + Base64.getEncoder().encodeToString(imageBytes);
         } catch (IOException ex) {
             throw new BusinessException("The poster could not be saved. Please try again.");
         }

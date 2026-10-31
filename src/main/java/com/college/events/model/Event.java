@@ -270,19 +270,63 @@ public class Event {
 
     /**
      * Poster shown on cards. Uploaded posters win; otherwise a deterministic
-     * placeholder poster is generated from the event name and category.
+     * 2.5D high-contrast navy and gold vector poster is generated from event data.
      */
     public String getPosterUrlOrDefault() {
         if (posterUrl != null && !posterUrl.isBlank()) {
             return posterUrl;
         }
-        String prompt = "modern minimalist college event poster for " + getCategory()
-                + ", title theme " + safe(name)
-                + ", deep navy blue and gold colour palette, elegant, clean typography, "
-                + "professional academic design";
-        return "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt="
-                + URLEncoder.encode(prompt, StandardCharsets.UTF_8)
-                + "&image_size=landscape_4_3";
+        String cat = category != null && !category.isBlank() ? category.toUpperCase() : "CAMPUS EVENT";
+        String eventTitle = name != null && !name.isBlank() ? name : "Campus Event";
+        if (eventTitle.length() > 34) {
+            eventTitle = eventTitle.substring(0, 31) + "...";
+        }
+        String venueText = venue != null && !venue.isBlank() ? venue : "College Campus";
+
+        String svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 450' width='800' height='450'>"
+                + "<defs>"
+                + "<linearGradient id='bgGrad' x1='0%' y1='0%' x2='100%' y2='100%'>"
+                + "<stop offset='0%' stop-color='#040d1a'/>"
+                + "<stop offset='50%' stop-color='#0a1c38'/>"
+                + "<stop offset='100%' stop-color='#0f2a52'/>"
+                + "</linearGradient>"
+                + "<linearGradient id='goldMetallic' x1='0%' y1='0%' x2='100%' y2='100%'>"
+                + "<stop offset='0%' stop-color='#ffea9f'/>"
+                + "<stop offset='45%' stop-color='#f3ca52'/>"
+                + "<stop offset='100%' stop-color='#b8860b'/>"
+                + "</linearGradient>"
+                + "<linearGradient id='slabGrad' x1='0%' y1='0%' x2='0%' y2='100%'>"
+                + "<stop offset='0%' stop-color='#0d2346'/>"
+                + "<stop offset='100%' stop-color='#061326'/>"
+                + "</linearGradient>"
+                + "<filter id='shadow25d' x='-10%' y='-10%' width='130%' height='130%'>"
+                + "<feDropShadow dx='0' dy='14' stdDeviation='12' flood-color='#000000' flood-opacity='0.65'/>"
+                + "</filter>"
+                + "</defs>"
+                + "<rect width='800' height='450' fill='url(#bgGrad)'/>"
+                + "<path d='M0,0 L420,0 L280,450 L0,450 Z' fill='rgba(255,255,255,0.015)'/>"
+                + "<path d='M420,0 L800,0 L800,450 L280,450 Z' fill='rgba(243,202,82,0.02)'/>"
+                + "<circle cx='720' cy='60' r='160' fill='rgba(243,202,82,0.08)'/>"
+                + "<g filter='url(#shadow25d)'>"
+                + "<rect x='80' y='65' width='640' height='320' rx='20' fill='url(#slabGrad)' stroke='rgba(243,202,82,0.5)' stroke-width='1.5'/>"
+                + "<rect x='80' y='65' width='640' height='6' rx='3' fill='url(#goldMetallic)'/>"
+                + "<rect x='80' y='380' width='640' height='5' rx='2' fill='#040d1a'/>"
+                + "</g>"
+                + "<rect x='115' y='105' width='170' height='34' rx='17' fill='url(#goldMetallic)'/>"
+                + "<text x='200' y='127' font-family='sans-serif' font-size='12' font-weight='800' fill='#050e1d' text-anchor='middle' letter-spacing='1.5'>" + xmlEscape(cat) + "</text>"
+                + "<text x='115' y='210' font-family='sans-serif' font-size='34' font-weight='800' fill='#ffffff' letter-spacing='-0.5'>" + xmlEscape(eventTitle) + "</text>"
+                + "<text x='115' y='265' font-family='sans-serif' font-size='18' font-weight='600' fill='#ffdf79'>" + xmlEscape(venueText) + "</text>"
+                + "<text x='115' y='300' font-family='sans-serif' font-size='14' font-weight='500' fill='#9bb0cd'>OFFICIAL CAMPUS EVENT</text>"
+                + "<circle cx='650' cy='122' r='20' fill='none' stroke='url(#goldMetallic)' stroke-width='2.5'/>"
+                + "<circle cx='650' cy='122' r='7' fill='url(#goldMetallic)'/>"
+                + "</svg>";
+
+        return "data:image/svg+xml;utf8," + URLEncoder.encode(svg, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    private String xmlEscape(String text) {
+        if (text == null) return "";
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&apos;");
     }
 
     private String safe(String value) {

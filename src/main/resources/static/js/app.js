@@ -173,16 +173,54 @@
         form.addEventListener("input", refresh);
         form.addEventListener("change", refresh);
         refresh();
+
+        // --- Live poster upload preview ----------------------------------
+        var posterFileInput = document.getElementById("posterFile");
+        var posterPreviewImg = document.getElementById("posterPreviewImg");
+        var posterPreviewWrap = document.getElementById("posterPreviewWrap");
+        var liveCardPoster = panel.querySelector('[data-preview="poster"]');
+
+        if (posterPreviewImg && (!posterPreviewImg.getAttribute("src") || posterPreviewImg.getAttribute("src").trim() === "")) {
+            if (!posterPreviewImg.getAttribute("src") || posterPreviewImg.getAttribute("src") === "") {
+                posterPreviewImg.style.display = "none";
+            }
+        }
+
+        if (posterFileInput) {
+            posterFileInput.addEventListener("change", function () {
+                if (posterFileInput.files && posterFileInput.files[0]) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        if (posterPreviewImg) {
+                            posterPreviewImg.src = e.target.result;
+                            posterPreviewImg.style.display = "block";
+                        }
+                        if (posterPreviewWrap) {
+                            posterPreviewWrap.style.display = "block";
+                        }
+                        if (liveCardPoster) {
+                            liveCardPoster.src = e.target.result;
+                            liveCardPoster.style.display = "block";
+                        }
+                    };
+                    reader.readAsDataURL(posterFileInput.files[0]);
+                }
+            });
+        }
     }
 
     // --- Poster image fallback --------------------------------------------
     document.addEventListener("error", function (event) {
         var image = event.target;
         if (image.tagName === "IMG" && image.hasAttribute("data-poster")) {
-            image.style.display = "none";
-            var fallback = image.parentElement && image.parentElement.querySelector(".poster-fallback");
-            if (fallback) {
-                fallback.style.display = "grid";
+            // Do not hide if it's already an SVG or Data URI with content
+            var src = image.getAttribute("src") || "";
+            if (!src.startsWith("data:")) {
+                image.style.display = "none";
+                var fallback = image.parentElement && image.parentElement.querySelector(".poster-fallback");
+                if (fallback) {
+                    fallback.style.display = "grid";
+                }
             }
         }
     }, true);

@@ -62,7 +62,7 @@
                                 <label for="posterFile">Event poster</label>
                                 <input class="input" type="file" id="posterFile" name="posterFile"
                                        accept="image/png,image/jpeg,image/webp,image/gif"/>
-                                <span class="hint">PNG, JPG, WEBP or GIF. Leave empty to use a generated placeholder poster.</span>
+                                <span class="hint">PNG, JPG, WEBP or GIF. Automatically saved & persisted in the database.</span>
                             </div>
 
                             <div class="field span-2">
@@ -73,12 +73,17 @@
                                 <span class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">Error</span>
                             </div>
 
-                            <div class="field span-2" th:if="${mode == 'edit'}">
-                                <label>Current poster</label>
-                                <img th:src="${event.posterUrlOrDefault}" data-poster="true"
-                                     th:alt="${event.name} + ' poster'"
-                                     style="max-width:260px;border-radius:10px;border:1px solid var(--line)"/>
-                                <input type="hidden" th:field="*{posterUrl}"/>
+                            <!-- Live poster preview (persists in DB across restarts & redeploys) -->
+                            <div class="field span-2" id="posterPreviewWrap">
+                                <label>Poster Preview</label>
+                                <div class="poster-preview-card" style="display:inline-block; position:relative;">
+                                    <img id="posterPreviewImg"
+                                         th:src="${mode == 'edit' and event != null ? event.posterUrlOrDefault : (eventForm.posterUrl != null and !#strings.isEmpty(eventForm.posterUrl) ? eventForm.posterUrl : '')}"
+                                         data-poster="true"
+                                         alt="Event poster preview"
+                                         class="poster-preview-img"/>
+                                </div>
+                                <input type="hidden" id="posterUrlField" th:field="*{posterUrl}"/>
                             </div>
                         </div>
                     </fieldset>
