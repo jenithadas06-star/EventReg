@@ -16,6 +16,9 @@ import com.college.events.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -34,19 +37,34 @@ public class DataSeeder implements CommandLineRunner {
     private final UserRepository users;
     private final EventRepository events;
     private final RegistrationRepository registrations;
+    private final DataSource dataSource;
 
-    public DataSeeder(UserRepository users, EventRepository events, RegistrationRepository registrations) {
+    public DataSeeder(UserRepository users, EventRepository events, RegistrationRepository registrations, DataSource dataSource) {
         this.users = users;
         this.events = events;
         this.registrations = registrations;
+        this.dataSource = dataSource;
     }
 
     @Override
     public void run(String... args) {
+        migrateDatabase();
         if (users.count() > 0) {
             return; // demo data already loaded
         }
         seed();
+    }
+
+    private void migrateDatabase() {
+        if (dataSource == null) {
+            return;
+        }
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE events ALTER COLUMN poster_url TYPE TEXT;");
+        } catch (Exception ignored) {
+            // Ignored if column is already TEXT or table not yet created
+        }
     }
 
     private void seed() {

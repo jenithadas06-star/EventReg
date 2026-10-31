@@ -152,6 +152,12 @@ public class OrganizerController {
             model.addAttribute("formAction", "/organizer/events");
             model.addAttribute("questionTypeOptions", com.college.events.model.QuestionType.values());
             return "organizer/event-form";
+        } catch (Exception ex) {
+            model.addAttribute("formError", "Unable to create event: " + (ex.getMessage() != null ? ex.getMessage() : "Unexpected error"));
+            model.addAttribute("mode", "create");
+            model.addAttribute("formAction", "/organizer/events");
+            model.addAttribute("questionTypeOptions", com.college.events.model.QuestionType.values());
+            return "organizer/event-form";
         }
     }
 
@@ -196,6 +202,13 @@ public class OrganizerController {
             return "redirect:/organizer/events/" + id + "/edit";
         } catch (BusinessException ex) {
             model.addAttribute("formError", ex.getMessage());
+            model.addAttribute("event", event);
+            model.addAttribute("mode", "edit");
+            model.addAttribute("formAction", "/organizer/events/" + id);
+            model.addAttribute("questionTypeOptions", com.college.events.model.QuestionType.values());
+            return "organizer/event-form";
+        } catch (Exception ex) {
+            model.addAttribute("formError", "Unable to update event: " + (ex.getMessage() != null ? ex.getMessage() : "Unexpected error"));
             model.addAttribute("event", event);
             model.addAttribute("mode", "edit");
             model.addAttribute("formAction", "/organizer/events/" + id);
@@ -415,9 +428,10 @@ public class OrganizerController {
 
     /**
      * Stores an uploaded poster:
-     * 1. Saves a local backup copy under {@code uploads/}.
-     * 2. Encodes an optimized Base64 Data URI that persists in the database across
-     *    Render/cloud container restarts without relying on ephemeral disks.
+     * 1. Reads the raw bytes directly to avoid container stream-consumption issues.
+     * 2. Saves a local backup copy under {@code uploads/} if disk is writable.
+     * 3. Scales and optimizes image to compact JPEG for persistent storage in Supabase PostgreSQL
+     *    as a Base64 Data URI, which survives container redeploys and restarts without ephemeral data loss.
      */
     private String storePoster(MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -432,47 +446,58 @@ public class OrganizerController {
             throw new BusinessException("The event poster must be a PNG, JPG, WEBP or GIF image.");
         }
         try {
-            // Optional local disk save
+            // Read bytes directly from MultipartFile first
+            byte[] imageBytes = file.getBytes();
+            if (imageBytes == null || imageBytes.length == 0) {
+                return null;
+            }
+
+            // Local disk backup
             try {
                 Path directory = Paths.get("uploads").toAbsolutePath();
                 Files.createDirectories(directory);
                 String fileName = "poster-" + UUID.randomUUID() + extension;
-                file.transferTo(directory.resolve(fileName).toFile());
+                Files.write(directory.resolve(fileName), imageBytes);
             } catch (Exception ignored) {
-                // Ignore disk write errors in read-only/ephemeral container runtimes
+                // Ignore disk write errors in read-only / ephemeral container runtimes
             }
 
             // Optimize & encode into a persistent Base64 Data URI
-            byte[] imageBytes = file.getBytes();
             String mimeType = file.getContentType() != null && !file.getContentType().isBlank()
                     ? file.getContentType() : "image/jpeg";
 
             try {
                 BufferedImage original = ImageIO.read(new ByteArrayInputStream(imageBytes));
                 if (original != null) {
-                    int maxDimension = 1200;
+                    int maxDimension = 1000;
                     int width = original.getWidth();
                     int height = original.getHeight();
 
+                    int targetWidth = width;
+                    int targetHeight = height;
                     if (width > maxDimension || height > maxDimension) {
                         double scale = Math.min((double) maxDimension / width, (double) maxDimension / height);
-                        int newWidth = Math.max(1, (int) Math.round(width * scale));
-                        int newHeight = Math.max(1, (int) Math.round(height * scale));
+                        targetWidth = Math.max(1, (int) Math.round(width * scale));
+                        targetHeight = Math.max(1, (int) Math.round(height * scale));
+                    }
 
-                        BufferedImage resized = new BufferedImage(newWidth, newHeight,
-                                original.getType() == 0 ? BufferedImage.TYPE_INT_RGB : original.getType());
-                        Graphics2D g2d = resized.createGraphics();
-                        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-                        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                        g2d.drawImage(original, 0, 0, newWidth, newHeight, null);
-                        g2d.dispose();
+                    BufferedImage rgbImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);
+                    Graphics2D g2d = rgbImage.createGraphics();
+                    g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                    g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    // Fill background white in case original had PNG transparency
+                    g2d.setColor(java.awt.Color.WHITE);
+                    g2d.fillRect(0, 0, targetWidth, targetHeight);
+                    g2d.drawImage(original, 0, 0, targetWidth, targetHeight, null);
+                    g2d.dispose();
 
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        String formatName = extension.replace(".", "").equalsIgnoreCase("png") ? "png" : "jpeg";
-                        ImageIO.write(resized, formatName, baos);
-                        imageBytes = baos.toByteArray();
-                        mimeType = formatName.equalsIgnoreCase("png") ? "image/png" : "image/jpeg";
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ImageIO.write(rgbImage, "jpeg", baos);
+                    byte[] compressed = baos.toByteArray();
+                    if (compressed != null && compressed.length > 0) {
+                        imageBytes = compressed;
+                        mimeType = "image/jpeg";
                     }
                 }
             } catch (Exception ignored) {
