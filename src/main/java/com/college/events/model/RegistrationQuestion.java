@@ -26,6 +26,8 @@ public class RegistrationQuestion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "event_id", insertable = false, updatable = false)
     private Long eventId;
 
     @Column(columnDefinition = "TEXT")

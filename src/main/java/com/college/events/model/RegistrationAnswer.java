@@ -18,6 +18,8 @@ public class RegistrationAnswer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "registration_id", insertable = false, updatable = false)
     private Long registrationId;
     private Long questionId;
 
